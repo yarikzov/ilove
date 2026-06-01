@@ -227,15 +227,15 @@ hr.divider {
   opacity: 0;
   text-shadow:
     0 0 6px var(--red),
-    0 0 16px var(--red),
-    0 0 28px var(--red);
+    0 0 14px var(--red);
   transition:
-    left 2.8s cubic-bezier(.22,.9,.2,1),
-    top  2.8s cubic-bezier(.22,.9,.2,1),
-    opacity 1s;
+    transform 2.6s cubic-bezier(.22,.9,.2,1),
+    opacity   1.2s ease;
   white-space: nowrap;
   pointer-events: none;
-  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+  left: 0;
+  top: 0;
 }
 
 #center-text {
@@ -361,63 +361,60 @@ hr.divider {
     const cx = vw / 2;
     const cy = vh / 2;
 
-    // Scale heart to fit screen — use 85% of the smaller side
-    // Heart formula spans roughly -16..16 in X, -5..13 in Y
-    // We want 16*scale ~ 42% of min(vw,vh)
+    // Scale: heart X spans -16..16, so 16*scale = ~40% of screen width
     const scale = Math.min(vw, vh) * 0.026;
+
+    // Fewer points on mobile = smoother animation
+    const isMobile = vw < 600;
+    const outlineStep = isMobile ? 0.032 : 0.020;
+    const innerStep   = isMobile ? 0.045 : 0.028;
+    const innerRings  = isMobile ? [0.25, 0.55, 0.82] : [0.18, 0.38, 0.56, 0.74, 0.90];
 
     function hx(t) { return 16 * Math.pow(Math.sin(t), 3); }
     function hy(t) { return 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t); }
 
-    // Outline points + filled inner points
     const points = [];
-
-    // Outline (dense)
-    for (let t = 0; t < Math.PI * 2; t += 0.018) {
+    for (let t = 0; t < Math.PI * 2; t += outlineStep)
       points.push({ x: hx(t), y: hy(t) });
-    }
-
-    // Inner fill — sample random points, keep those inside heart
-    // Use parametric fill: random t with random radial shrink
-    for (let t = 0; t < Math.PI * 2; t += 0.025) {
-      for (let r = 0.15; r < 0.98; r += 0.18) {
+    for (let t = 0; t < Math.PI * 2; t += innerStep)
+      for (const r of innerRings)
         points.push({ x: hx(t) * r, y: hy(t) * r });
-      }
-    }
 
-    // Shuffle
     points.sort(() => Math.random() - 0.5);
 
+    // All words start at center (0,0 relative to cx,cy), then fly to position
     points.forEach((p, i) => {
       const el = document.createElement('div');
       el.className = 'word';
       el.innerText = 'i love you';
 
-      // Random scatter start
-      const sx = cx + (Math.random() - 0.5) * vw * 2;
-      const sy = cy + (Math.random() - 0.5) * vh * 2;
+      // Final position relative to center
+      const tx = cx + p.x * scale;
+      const ty = cy - p.y * scale;
 
-      // target position — translate(-50%,-50%) is on the element,
-      // so left/top are the CENTER of the word
-      el.style.left = sx + 'px';
-      el.style.top  = sy + 'px';
+      // Start: scatter off-screen using transform
+      const scatterX = (Math.random() - 0.5) * vw * 2.2;
+      const scatterY = (Math.random() - 0.5) * vh * 2.2;
+
+      // Place element at final position, use transform to offset to scatter
+      el.style.left = tx + 'px';
+      el.style.top  = ty + 'px';
+      el.style.transform = `translate(${scatterX}px, ${scatterY}px)`;
 
       container.appendChild(el);
 
-      // Fly to heart position
+      // Animate to final position
       requestAnimationFrame(() => {
         setTimeout(() => {
-          el.style.opacity = '1';
-          el.style.left = (cx + p.x * scale) + 'px';
-          el.style.top  = (cy - p.y * scale) + 'px';
-        }, i * 4 + 50);
+          el.style.opacity   = '1';
+          el.style.transform = 'translate(0, 0)';
+        }, i * 5 + 60);
       });
     });
 
-    // Show "Love you." after all words land
     setTimeout(() => {
       document.getElementById('center-text').classList.add('show');
-    }, points.length * 4 + 1400);
+    }, points.length * 5 + 1400);
   }
 </script>
 </body>
