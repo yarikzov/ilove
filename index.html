@@ -349,74 +349,75 @@ hr.divider {
     const H      = canvas.height = window.innerHeight;
     const cx = W / 2;
     const cy = H / 2;
-    const scale = Math.min(W, H) * 0.027;
+
+    // Heart formula: X spans ±16, Y spans -5..13
+    // Vertically center the heart shape (its visual center is around y=4)
+    const scale = Math.min(W, H) * 0.024;
+    const offsetY = 4 * scale; // shift up so heart is visually centered
 
     function hx(t) { return 16 * Math.pow(Math.sin(t), 3); }
     function hy(t) { return 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t); }
 
-    // Build target points
+    // Build target positions — keep count low for mobile
     const targets = [];
-    for (let t = 0; t < Math.PI*2; t += 0.030)
+    // Outline
+    for (let t = 0; t < Math.PI*2; t += 0.045)
       targets.push({ x: hx(t)*scale, y: -hy(t)*scale });
-    for (let t = 0; t < Math.PI*2; t += 0.040)
-      for (const r of [0.3, 0.55, 0.78])
+    // 2 inner rings only
+    for (let t = 0; t < Math.PI*2; t += 0.055)
+      for (const r of [0.4, 0.72])
         targets.push({ x: hx(t)*r*scale, y: -hy(t)*r*scale });
 
-    // Each particle: current pos + target pos
+    // Particles: start scattered, fly to target
     const particles = targets.map(tgt => ({
       tx: cx + tgt.x,
-      ty: cy + tgt.y,
-      x:  cx + (Math.random()-0.5)*W*2.5,
-      y:  cy + (Math.random()-0.5)*H*2.5,
+      ty: cy + tgt.y + offsetY,
+      x:  cx + (Math.random()-0.5) * W * 1.8,
+      y:  cy + (Math.random()-0.5) * H * 1.8,
     }));
 
-    const fontSize = Math.max(9, Math.min(13, W * 0.030));
-    ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
-
-    // Ease factor — higher = faster convergence
-    const ease = 0.055;
-    let frame = 0;
-    let allLanded = false;
+    const fontSize = Math.round(Math.min(W, H) * 0.028);
+    const ease = 0.10; // faster — lands in ~2 sec
+    let done = false;
 
     function draw() {
-      ctx.clearRect(0, 0, W, H);
+      // Fade trail instead of full clear — gives motion blur feel
+      ctx.fillStyle = 'rgba(10,0,0,0.35)';
+      ctx.fillRect(0, 0, W, H);
 
       let settled = 0;
 
-      particles.forEach(p => {
-        // Ease towards target
+      for (const p of particles) {
         p.x += (p.tx - p.x) * ease;
         p.y += (p.ty - p.y) * ease;
 
-        const dx = Math.abs(p.tx - p.x);
-        const dy = Math.abs(p.ty - p.y);
-        if (dx < 1 && dy < 1) settled++;
+        const dist = Math.hypot(p.tx - p.x, p.ty - p.y);
+        if (dist < 2) settled++;
 
-        // Distance from target → brightness/alpha
-        const dist  = Math.sqrt(dx*dx + dy*dy);
-        const norm  = Math.min(dist / (W*0.3), 1); // 0=at target, 1=far
-        const light = 30 + (1-norm) * 40;          // 30%–70% lightness
-        const alpha = 0.4 + (1-norm) * 0.6;
+        // Brighter when close to target
+        const norm  = Math.min(dist / 80, 1);
+        const light = Math.round(25 + (1-norm) * 45);
+        const alpha = 0.35 + (1-norm) * 0.65;
 
         ctx.globalAlpha = alpha;
         ctx.fillStyle   = `hsl(0,100%,${light}%)`;
+        ctx.font        = `${fontSize}px 'Share Tech Mono',monospace`;
         ctx.fillText('i love you', p.x, p.y);
-      });
+      }
 
       ctx.globalAlpha = 1;
-      frame++;
 
-      // Show center text once most particles landed
-      if (!allLanded && settled > particles.length * 0.92) {
-        allLanded = true;
-        setTimeout(() => {
-          document.getElementById('center-text').classList.add('show');
-        }, 600);
+      if (!done && settled > particles.length * 0.88) {
+        done = true;
+        setTimeout(() => document.getElementById('center-text').classList.add('show'), 500);
       }
 
       requestAnimationFrame(draw);
     }
 
+    // Clear once before starting
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, W, H);
     draw();
   }
 </script>
