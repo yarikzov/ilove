@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>heart.PROTOCOL_v2.0</title>
+<title>heart.PROTOCOL_v2.0 — i love you</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
 
@@ -27,7 +27,6 @@ html, body {
   overflow: hidden;
 }
 
-/* Scanlines */
 body::before {
   content: '';
   position: fixed; inset: 0;
@@ -40,7 +39,6 @@ body::before {
   z-index: 9999;
 }
 
-/* ===== LOGIN ===== */
 #login-screen {
   position: fixed; inset: 0;
   display: flex;
@@ -142,7 +140,6 @@ hr.divider {
   font-family: 'Share Tech Mono', monospace;
   font-size: clamp(14px, 4vw, 16px);
   width: 100%;
-  /* prevent iOS zoom on focus */
   font-size: max(16px, 1em);
 }
 .input-row input::placeholder { color: #444; }
@@ -161,7 +158,6 @@ hr.divider {
   text-transform: uppercase;
   box-shadow: 0 0 20px rgba(200,0,0,0.5);
   transition: background 0.2s, box-shadow 0.2s;
-  /* tap highlight */
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -189,7 +185,6 @@ hr.divider {
   letter-spacing: 0.05em;
 }
 
-/* ===== BOOT ===== */
 #boot-overlay {
   position: fixed; inset: 0;
   background: var(--bg);
@@ -212,7 +207,6 @@ hr.divider {
 .boot-line .ok  { color: #00ff41; }
 .boot-line .dim { color: var(--grey); }
 
-/* ===== LOVE SCREEN ===== */
 #love-screen {
   display: none;
   position: fixed; inset: 0;
@@ -226,36 +220,10 @@ hr.divider {
   width: 100%;
   height: 100%;
 }
-
-#center-text {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-family: 'VT323', monospace;
-  font-size: clamp(44px, 11vw, 76px);
-  color: var(--white);
-  opacity: 0;
-  text-shadow: 0 0 10px white, 0 0 28px var(--red);
-  pointer-events: none;
-  transition: opacity 2s;
-  white-space: nowrap;
-  z-index: 10;
-}
-#center-text.show { opacity: 1; }
-
-@keyframes shake {
-  0%,100% { transform: translateX(0); }
-  20%      { transform: translateX(-6px); }
-  40%      { transform: translateX(6px); }
-  60%      { transform: translateX(-4px); }
-  80%      { transform: translateX(4px); }
-}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <div class="terminal">
     <div class="sys-line"><span>[</span>system<span>]</span> Initializing heart.PROTOCOL_v2.0<span class="blink-cursor"></span></div>
@@ -279,7 +247,6 @@ hr.divider {
   </div>
 </div>
 
-<!-- BOOT -->
 <div id="boot-overlay">
   <div class="boot-line" id="b0"><span class="dim">[0.001]</span> Loading heart.PROTOCOL_v2.0 ......... <span class="ok">OK</span></div>
   <div class="boot-line" id="b1"><span class="dim">[0.042]</span> Decrypting package .................. <span class="ok">OK</span></div>
@@ -290,17 +257,13 @@ hr.divider {
   <div class="boot-line" id="b6" style="margin-top:14px;color:var(--white);font-size:clamp(12px,4vw,16px);letter-spacing:0.12em;">> DECRYPTION COMPLETE. OPENING MESSAGE...</div>
 </div>
 
-<!-- LOVE -->
 <div id="love-screen">
   <canvas id="heart-canvas"></canvas>
-  <div id="center-text">Love you.</div>
 </div>
 
 <script>
-  // ===== CHANGE CREDENTIALS HERE =====
   const CORRECT_LOGIN    = "pypik";
   const CORRECT_PASSWORD = "131208";
-  // ====================================
 
   const loginScreen = document.getElementById('login-screen');
   const loveScreen  = document.getElementById('love-screen');
@@ -344,80 +307,120 @@ hr.divider {
 
   function buildHeart() {
     const canvas = document.getElementById('heart-canvas');
-    const ctx    = canvas.getContext('2d');
-    const W      = canvas.width  = window.innerWidth;
-    const H      = canvas.height = window.innerHeight;
-    const cx = W / 2;
-    const cy = H / 2;
-
-    // Heart formula: X spans ±16, Y spans -5..13
-    // Vertically center the heart shape (its visual center is around y=4)
-    const scale = Math.min(W, H) * 0.024;
-    const offsetY = 4 * scale; // shift up so heart is visually centered
-
-    function hx(t) { return 16 * Math.pow(Math.sin(t), 3); }
-    function hy(t) { return 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t); }
-
-    // Build target positions — keep count low for mobile
-    const targets = [];
-    // Outline
-    for (let t = 0; t < Math.PI*2; t += 0.045)
-      targets.push({ x: hx(t)*scale, y: -hy(t)*scale });
-    // 2 inner rings only
-    for (let t = 0; t < Math.PI*2; t += 0.055)
-      for (const r of [0.4, 0.72])
-        targets.push({ x: hx(t)*r*scale, y: -hy(t)*r*scale });
-
-    // Particles: start scattered, fly to target
-    const particles = targets.map(tgt => ({
-      tx: cx + tgt.x,
-      ty: cy + tgt.y + offsetY,
-      x:  cx + (Math.random()-0.5) * W * 1.8,
-      y:  cy + (Math.random()-0.5) * H * 1.8,
-    }));
-
-    const fontSize = Math.round(Math.min(W, H) * 0.028);
-    const ease = 0.10; // faster — lands in ~2 sec
-    let done = false;
-
-    function draw() {
-      // Fade trail instead of full clear — gives motion blur feel
-      ctx.fillStyle = 'rgba(10,0,0,0.35)';
-      ctx.fillRect(0, 0, W, H);
-
-      let settled = 0;
-
-      for (const p of particles) {
-        p.x += (p.tx - p.x) * ease;
-        p.y += (p.ty - p.y) * ease;
-
-        const dist = Math.hypot(p.tx - p.x, p.ty - p.y);
-        if (dist < 2) settled++;
-
-        // Brighter when close to target
-        const norm  = Math.min(dist / 80, 1);
-        const light = Math.round(25 + (1-norm) * 45);
-        const alpha = 0.35 + (1-norm) * 0.65;
-
-        ctx.globalAlpha = alpha;
-        ctx.fillStyle   = `hsl(0,100%,${light}%)`;
-        ctx.font        = `${fontSize}px 'Share Tech Mono',monospace`;
-        ctx.fillText('i love you', p.x, p.y);
-      }
-
-      ctx.globalAlpha = 1;
-
-      if (!done && settled > particles.length * 0.88) {
-        done = true;
-        setTimeout(() => document.getElementById('center-text').classList.add('show'), 500);
-      }
-
-      requestAnimationFrame(draw);
+    const ctx = canvas.getContext('2d');
+    
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    
+    function resizeCanvas() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      centerX = width / 2;
+      centerY = height / 2;
+      initParticles();
     }
-
-    // Clear once before starting
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, W, H);
+    
+    let centerX = width / 2;
+    let centerY = height / 2;
+    
+    // Правильная формула сердца
+    function heartX(t) {
+      return 16 * Math.pow(Math.sin(t), 3);
+    }
+    function heartY(t) {
+      return 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+    }
+    
+    let particles = [];
+    let settled = false;
+    let animationId = null;
+    
+    function generateTargets() {
+      const baseScale = Math.min(width, height) * 0.022;
+      const targets = [];
+      
+      // Только контур + 1 внутренний слой — чтобы не перекрывалось
+      for (let t = 0; t < Math.PI * 2; t += 0.035) {
+        const x = heartX(t) * baseScale;
+        const y = -heartY(t) * baseScale;
+        targets.push({ x: x, y: y });
+      }
+      
+      // Один внутренний слой для объема (не густо)
+      for (let t = 0; t < Math.PI * 2; t += 0.045) {
+        for (const r of [0.55, 0.75]) {
+          const x = heartX(t) * r * baseScale;
+          const y = -heartY(t) * r * baseScale;
+          targets.push({ x: x, y: y });
+        }
+      }
+      
+      return targets;
+    }
+    
+    function initParticles() {
+      const targets = generateTargets();
+      particles = targets.map((tgt, idx) => ({
+        tx: centerX + tgt.x,
+        ty: centerY + tgt.y,
+        x: centerX + (Math.random() - 0.5) * width * 1.6,
+        y: centerY + (Math.random() - 0.5) * height * 1.5,
+        speed: 0.03 + Math.random() * 0.025,
+        phase: Math.random() * Math.PI * 2,
+        text: 'i love you'
+      }));
+      settled = false;
+    }
+    
+    // МЕЛКИЙ шрифт
+    const getFontSize = () => Math.round(Math.min(width, height) * 0.016);
+    
+    function draw() {
+      if (!ctx) return;
+      
+      ctx.fillStyle = 'rgba(8, 0, 0, 0.12)';
+      ctx.fillRect(0, 0, width, height);
+      
+      let settledCount = 0;
+      const now = Date.now() / 1000;
+      
+      for (const p of particles) {
+        p.x += (p.tx - p.x) * p.speed;
+        p.y += (p.ty - p.y) * p.speed;
+        
+        const dist = Math.hypot(p.tx - p.x, p.ty - p.y);
+        if (dist < 1.5) settledCount++;
+        
+        // Ярко-красный
+        const norm = Math.min(dist / 50, 1);
+        const alpha = 0.55 + (1 - norm) * 0.55;
+        const flicker = 0.92 + Math.sin(now * 2.8 + p.phase) * 0.08;
+        
+        ctx.shadowBlur = dist < 20 ? 12 : 5;
+        ctx.shadowColor = `rgba(255, 30, 40, ${0.8 * (1 - norm)})`;
+        ctx.globalAlpha = alpha * flicker;
+        ctx.fillStyle = `hsl(0, 100%, 55%)`;
+        ctx.font = `${getFontSize()}px 'Share Tech Mono', monospace`;
+        
+        ctx.fillText(p.text, p.x, p.y);
+      }
+      
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      
+      if (!settled && settledCount > particles.length * 0.87) {
+        settled = true;
+      }
+      
+      animationId = requestAnimationFrame(draw);
+    }
+    
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+    });
+    
+    resizeCanvas();
+    initParticles();
     draw();
   }
 </script>
