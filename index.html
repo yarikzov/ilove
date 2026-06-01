@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>heart.PROTOCOL_v2.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+
+  :root {
+    --red: #cc0000;
+    --red-bright: #ff2222;
+    --red-dim: #880000;
+    --red-glow: rgba(200,0,0,0.4);
+    --white: #f0f0f0;
+    --grey: #888;
+    --bg: #0a0a0a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: default;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.12) 3px,
+      rgba(0,0,0,0.12) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ========== LOGIN SCREEN ========== */
+  #login-screen {
+    width: 480px;
+    padding: 40px 36px;
+    border: 1px solid var(--red-dim);
+    background: rgba(10,0,0,0.85);
+    box-shadow: 0 0 40px var(--red-glow), inset 0 0 30px rgba(0,0,0,0.8);
+    position: relative;
+  }
+
+  #login-screen::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 20px; right: 20px; height: 2px;
+    background: var(--red);
+    box-shadow: 0 0 12px var(--red-bright);
+  }
+
+  .sys-line {
+    color: var(--red-bright);
+    font-size: 13px;
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .sys-line .bracket { color: var(--red-dim); }
+
+  .blink-cursor::after {
+    content: '█';
+    animation: blink 1s step-end infinite;
+    color: var(--red);
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  .title-line {
+    font-family: 'VT323', monospace;
+    font-size: 56px;
+    color: var(--white);
+    text-shadow: 0 0 20px rgba(255,255,255,0.3);
+    line-height: 1;
+    margin: 20px 0 8px;
+    letter-spacing: 0.03em;
+  }
+
+  .sub-line {
+    color: var(--grey);
+    font-size: 12px;
+    margin-bottom: 28px;
+    letter-spacing: 0.1em;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--red-dim);
+    margin: 20px 0;
+    opacity: 0.5;
+  }
+
+  .prompt-label {
+    color: var(--red);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .prompt-label span { color: var(--grey); }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(200,0,0,0.3);
+    padding: 8px 12px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-row:focus-within {
+    border-color: var(--red);
+    box-shadow: 0 0 12px var(--red-glow);
+  }
+
+  .prompt-arrow {
+    color: var(--red);
+    margin-right: 10px;
+    font-size: 14px;
+    user-select: none;
+  }
+
+  .input-row input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--white);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    width: 100%;
+    letter-spacing: 0.05em;
+  }
+
+  .input-row input::placeholder { color: #444; }
+
+  .decrypt-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    background: var(--red);
+    color: var(--white);
+    border: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(200,0,0,0.5);
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+
+  .decrypt-btn:hover {
+    background: var(--red-bright);
+    box-shadow: 0 0 35px rgba(255,30,30,0.7);
+  }
+
+  .decrypt-btn::before {
+    content: '🔒 ';
+    font-size: 12px;
+  }
+
+  .error-line {
+    color: var(--red-bright);
+    font-size: 12px;
+    margin-top: 14px;
+    min-height: 18px;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .error-line.show { opacity: 1; }
+
+  .hint-line {
+    color: #555;
+    font-size: 11px;
+    text-align: center;
+    margin-top: 18px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ========== LOVE SCREEN ========== */
+  #love-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+  }
+
+  #love-screen.active { display: block; }
+
+  .word {
+    position: absolute;
+    color: var(--red);
+    font-size: 15px;
+    opacity: 0;
+    text-shadow:
+      0 0 6px var(--red),
+      0 0 16px var(--red),
+      0 0 28px var(--red);
+    transition:
+      left 2.8s cubic-bezier(.22,.9,.2,1),
+      top  2.8s cubic-bezier(.22,.9,.2,1),
+      opacity 1s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  #center-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'VT323', monospace;
+    font-size: 80px;
+    color: var(--white);
+    opacity: 0;
+    text-shadow:
+      0 0 10px white,
+      0 0 28px var(--red);
+    pointer-events: none;
+    transition: opacity 2s;
+    white-space: nowrap;
+  }
+
+  #center-text.show { opacity: 1; }
+
+  /* boot sequence */
+  #boot-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    font-size: 14px;
+    color: var(--red-bright);
+    letter-spacing: 0.08em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+
+  #boot-overlay.show { opacity: 1; pointer-events: all; }
+
+  .boot-line {
+    opacity: 0;
+    margin-bottom: 4px;
+    transition: opacity 0.1s;
+  }
+
+  .boot-line.vis { opacity: 1; }
+  .boot-line .ok { color: #00ff41; }
+  .boot-line .dim { color: var(--grey); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="sys-line"><span class="bracket">[</span>system<span class="bracket">]</span> Initializing heart.PROTOCOL_v2.0<span class="blink-cursor"></span></div>
+  <div class="sys-line" style="color:var(--grey); font-size:11px; margin-bottom:0;">> One encrypted package found for you.</div>
+
+  <div class="title-line">Access.</div>
+  <div class="sub-line">// SECURE_CHANNEL :: AUTHENTICATION_REQUIRED</div>
+
+  <hr class="divider">
+
+  <div class="prompt-label">LOGIN_ID <span>// enter access code</span></div>
+  <div class="input-row">
+    <span class="prompt-arrow">></span>
+    <input type="text" id="username" placeholder="user_id..." autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="prompt-label">PASSWORD <span>// encrypted</span></div>
+  <div class="input-row">
+    <span class="prompt-arrow">></span>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="off">
+  </div>
+
+  <button class="decrypt-btn" onclick="tryLogin()">DECRYPT MESSAGE</button>
+
+  <div class="error-line" id="error-line">> ERROR :: ACCESS_DENIED — invalid credentials</div>
+  <div class="hint-line">(or just click anywhere)</div>
+</div>
+
+<!-- BOOT OVERLAY -->
+<div id="boot-overlay">
+  <div class="boot-line" id="b0"><span class="dim">[0.001]</span> Loading heart.PROTOCOL_v2.0 ................. <span class="ok">OK</span></div>
+  <div class="boot-line" id="b1"><span class="dim">[0.042]</span> Decrypting package .......................... <span class="ok">OK</span></div>
+  <div class="boot-line" id="b2"><span class="dim">[0.103]</span> Parsing feelings.dat ........................ <span class="ok">OK</span></div>
+  <div class="boot-line" id="b3"><span class="dim">[0.218]</span> Rendering love matrix ...................... <span class="ok">OK</span></div>
+  <div class="boot-line" id="b4"><span class="dim">[0.341]</span> Calibrating heart_shape .................... <span class="ok">OK</span></div>
+  <div class="boot-line" id="b5"><span class="dim">[0.512]</span> Compiling i_love_you × ∞ .................. <span class="ok">OK</span></div>
+  <div class="boot-line" id="b6" style="margin-top:16px; color:var(--white); font-size:16px; letter-spacing:0.15em;">> DECRYPTION COMPLETE. OPENING MESSAGE...</div>
+</div>
+
+<!-- LOVE SCREEN -->
+<div id="love-screen">
+  <div id="center-text">Love you.</div>
+</div>
+
+<script>
+  // ======= CONFIG — CHANGE CREDENTIALS HERE =======
+  const CORRECT_LOGIN    = "pypik";       // ← логин
+  const CORRECT_PASSWORD = "131208v";  // ← пароль
+  // =================================================
+
+  const loginScreen = document.getElementById('login-screen');
+  const loveScreen  = document.getElementById('love-screen');
+  const bootOverlay = document.getElementById('boot-overlay');
+  const errorLine   = document.getElementById('error-line');
+
+  // Click anywhere = login
+  document.body.addEventListener('click', (e) => {
+    if (!loveScreen.classList.contains('active') && !bootOverlay.classList.contains('show')) {
+      if (!e.target.closest('#login-screen')) return;
+    }
+  });
+
+  document.querySelector('.hint-line').addEventListener('click', () => triggerBoot());
+  document.getElementById('password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') tryLogin();
+  });
+
+  function tryLogin() {
+    const u = document.getElementById('username').value.trim().toLowerCase();
+    const p = document.getElementById('password').value;
+    if (u === CORRECT_LOGIN.toLowerCase() && p === CORRECT_PASSWORD) {
+      triggerBoot();
+    } else {
+      errorLine.classList.add('show');
+      document.getElementById('login-screen').style.animation = 'shake 0.4s ease';
+      setTimeout(() => {
+        document.getElementById('login-screen').style.animation = '';
+      }, 400);
+    }
+  }
+
+  function triggerBoot() {
+    loginScreen.style.opacity = '0';
+    loginScreen.style.transition = 'opacity 0.4s';
+    setTimeout(() => { loginScreen.style.display = 'none'; }, 400);
+
+    bootOverlay.classList.add('show');
+    const lines = ['b0','b1','b2','b3','b4','b5','b6'];
+    lines.forEach((id, i) => {
+      setTimeout(() => {
+        document.getElementById(id).classList.add('vis');
+      }, i * 180);
+    });
+
+    setTimeout(() => {
+      bootOverlay.style.opacity = '0';
+      setTimeout(() => {
+        bootOverlay.classList.remove('show');
+        showLove();
+      }, 600);
+    }, lines.length * 180 + 600);
+  }
+
+  function showLove() {
+    loveScreen.classList.add('active');
+    initHeart();
+  }
+
+  // ======= HEART — div words flying in =======
+  function initHeart() {
+    const container = document.getElementById('love-screen');
+    const cx = window.innerWidth  / 2;
+    const cy = window.innerHeight / 2;
+
+    function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
+    function heartY(t) { return 13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t); }
+
+    // Scale so heart fills ~70% of the smaller dimension
+    const scale = Math.min(window.innerWidth, window.innerHeight) * 0.032;
+
+    // Generate points: outline + inner fill (random offset towards center)
+    const points = [];
+    for (let t = 0; t < Math.PI * 2; t += 0.022) {
+      for (let j = 0; j < 6; j++) {
+        const r = 1 - Math.random() * 0.28;
+        points.push({
+          x: heartX(t) * r,
+          y: heartY(t) * r
+        });
+      }
+    }
+
+    // Shuffle
+    points.sort(() => Math.random() - 0.5);
+
+    points.forEach((p, index) => {
+      const el = document.createElement('div');
+      el.className = 'word';
+      el.innerText = 'i love you';
+
+      // Start at random scatter position
+      const startX = cx + (Math.random() - 0.5) * window.innerWidth  * 1.6;
+      const startY = cy + (Math.random() - 0.5) * window.innerHeight * 1.2;
+
+      el.style.left = startX + 'px';
+      el.style.top  = startY + 'px';
+
+      container.appendChild(el);
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          el.style.opacity = '1';
+          el.style.left = (cx + p.x * scale) + 'px';
+          el.style.top  = (cy - p.y * scale) + 'px';
+        }, index * 5);
+      });
+    });
+
+    // Show "Love you." text after animation
+    setTimeout(() => {
+      document.getElementById('center-text').classList.add('show');
+    }, points.length * 5 + 1200);
+  }
+</script>
+
+<style>
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX(8px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX(5px); }
+}
+</style>
+</body>
+</html>
